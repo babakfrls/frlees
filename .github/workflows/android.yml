@@ -17,18 +17,18 @@ jobs:
       - uses: android-actions/setup-android@v3
       - name: Copy site into the app (offline copy)
         run: |
-          mkdir -p android/app/src/main/assets
-          cp index.html logo.png android/app/src/main/assets/
+          mkdir -p frlees-github/android/app/src/main/assets
+          cp frlees-github/index.html frlees-github/logo.png frlees-github/android/app/src/main/assets/
       - name: Build APK
-        working-directory: android
+        working-directory: frlees-github/android
         run: |
           chmod +x gradlew
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          ./gradlew assembleRelease --no-daemon -PsiteUrl="https://${OWNER}.github.io/${{ github.event.repository.name }}/"
+          ./gradlew assembleRelease --no-daemon -PsiteUrl="https://${OWNER}.github.io/${{ github.event.repository.name }}/frlees-github/"
       - name: Publish frlees.apk
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk frlees.apk
+          cp frlees-github/android/app/build/outputs/apk/release/app-release.apk frlees.apk
           gh release delete apk --yes --cleanup-tag || true
           gh release create apk frlees.apk --title "frlees - Android" --notes "Telecharger frlees.apk w stabliha. dev by : frlees"
