@@ -1,0 +1,25 @@
+plugins { id 'com.android.application' }
+def siteUrl = project.findProperty('siteUrl') ?: ''
+android {
+    namespace 'com.frlees.app'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.frlees.app'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0.0'
+        buildConfigField 'String', 'SITE_URL', "\"${siteUrl}\""
+    }
+    buildFeatures { buildConfig true }
+    signingConfigs {
+        release {
+            storeFile file('frlees.jks')
+            storePassword 'frlees123'
+            keyAlias 'frlees'
+            keyPassword 'frlees123'
+        }
+    }
+    buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
