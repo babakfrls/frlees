@@ -38,12 +38,19 @@ const css = `
 .jx-sym{font-weight:800;color:var(--c)}
 .jx-turn{text-align:center;font-weight:700;font-size:15px;min-height:22px}
 .jx-board{position:relative;width:100%;max-width:380px;margin:0 auto}
-.jx-xo{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;aspect-ratio:1}
-.jx-xo button{border-radius:16px;background:var(--card);border:1px solid var(--cardBorder);display:grid;place-items:center;font:inherit;font-size:clamp(40px,14vw,64px);font-weight:800;cursor:pointer;color:var(--text);padding:0;line-height:1}
-.jx-xo button.x{color:var(--accent)}.jx-xo button.o{color:#ff5a7a}
-.jx-xo button.win{background:rgba(47,140,255,.16);border-color:var(--accent)}
-.jx-xo button.o.win{background:rgba(255,90,122,.14);border-color:#ff5a7a}
-.jx-xo button span{animation:jxpop .18s ease}
+.jx-xo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:10px;aspect-ratio:1;padding:12px;border-radius:24px;background:var(--card);border:1px solid var(--cardBorder);backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+.jx-xo button{position:relative;width:100%;height:100%;min-width:0;min-height:0;aspect-ratio:1;border-radius:22%;background:rgba(47,140,255,.06);border:1px solid var(--cardBorder);display:grid;place-items:center;cursor:pointer;padding:0;overflow:hidden;transition:transform .12s,background .2s}
+.jx-xo button:not(.x):not(.o):hover{background:rgba(47,140,255,.12)}
+.jx-xo button:active{transform:scale(.95)}
+.jx-xo button svg{width:58%;height:58%;overflow:visible}
+.jx-xo button.x{background:linear-gradient(145deg,rgba(47,140,255,.16),rgba(124,196,255,.06))}
+.jx-xo button.o{background:linear-gradient(145deg,rgba(255,90,122,.16),rgba(255,163,182,.06))}
+.jx-xo button.win{border-color:var(--wc);box-shadow:inset 0 0 0 2px var(--wc);animation:jxglow .9s ease-in-out infinite alternate}
+.jx-xo button.x.win{--wc:var(--accent)}.jx-xo button.o.win{--wc:#ff5a7a}
+@keyframes jxglow{from{box-shadow:inset 0 0 0 2px var(--wc),0 0 0 0 transparent}to{box-shadow:inset 0 0 0 2px var(--wc),0 0 18px 2px color-mix(in srgb,var(--wc) 45%,transparent)}}
+.jx-xo .drawn path,.jx-xo .drawn circle{stroke-dasharray:100;stroke-dashoffset:100;animation:jxdraw .35s ease forwards}
+.jx-xo .drawn path:nth-child(2){animation-delay:.15s}
+@keyframes jxdraw{to{stroke-dashoffset:0}}
 @keyframes jxpop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 .jx-c4{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:10px;border-radius:22px;background:var(--card);border:1px solid var(--cardBorder);backdrop-filter:blur(14px);box-shadow:var(--shadow);cursor:pointer;touch-action:manipulation}
 .jx-c4 i{aspect-ratio:1;border-radius:30%;background:rgba(47,140,255,.06);border:1px solid var(--cardBorder);position:relative}
@@ -153,9 +160,9 @@ function makeGame(cfg) {
       <div class="jx-score">${pl(0)}${pl(1)}</div>
       <div class="jx-turn">${turnTxt}</div>
       <div class="jx-board" id="jxBoard">${cfg.board(s)}</div>
-      <div class="jx-actions"><button class="jx-btn alt" id="jxNew">Partie jdida</button></div>
+      <div class="jx-actions"><button class="jx-btn alt" id="jxNew">Leave Partie</button></div>
     `, r => {
-      r.querySelector("#jxNew").onclick = newRound;
+      r.querySelector("#jxNew").onclick = () => { s.rid++; show("home"); };
       cfg.bind(r, s, move);
       if (s.over) showEnd(r);
     });
@@ -249,8 +256,12 @@ const xo = makeGame({
   reset: (s) => { s.cells = Array(9).fill(null); s.last = -1; },
   board: (s) => {
     const win = s.over && s.res ? s.res.line : [];
-    return `<div class="jx-xo">${s.cells.map((v, i) =>
-      `<button data-i="${i}" class="${v === 0 ? "x" : v === 1 ? "o" : ""}${win.includes(i) ? " win" : ""}" aria-label="Khana ${i + 1}">${v === null ? "" : i === s.last ? `<span>${v === 0 ? "X" : "O"}</span>` : (v === 0 ? "X" : "O")}</button>`).join("")}</div>`;
+    const X = (d) => `<svg viewBox="0 0 100 100" class="${d}"><defs><linearGradient id="gx" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f7bff"/><stop offset="1" stop-color="#7cc4ff"/></linearGradient></defs><path d="M22 22L78 78" pathLength="100" stroke="url(#gx)" stroke-width="16" stroke-linecap="round" fill="none"/><path d="M78 22L22 78" pathLength="100" stroke="url(#gx)" stroke-width="16" stroke-linecap="round" fill="none"/></svg>`;
+    const O = (d) => `<svg viewBox="0 0 100 100" class="${d}"><defs><linearGradient id="go" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4d73"/><stop offset="1" stop-color="#ffa3b6"/></linearGradient></defs><circle cx="50" cy="50" r="30" pathLength="100" stroke="url(#go)" stroke-width="15" fill="none" transform="rotate(-90 50 50)"/></svg>`;
+    return `<div class="jx-xo">${s.cells.map((v, i) => {
+      const d = i === s.last ? "drawn" : "";
+      return `<button data-i="${i}" class="${v === 0 ? "x" : v === 1 ? "o" : ""}${win.includes(i) ? " win" : ""}" aria-label="Khana ${i + 1}">${v === null ? "" : v === 0 ? X(d) : O(d)}</button>`;
+    }).join("")}</div>`;
   },
   bind: (r, s, move) => r.querySelectorAll(".jx-xo button").forEach(b => b.onclick = () => move(+b.dataset.i)),
   apply: (s, i) => { if (s.cells[i] !== null) return false; s.cells[i] = s.turn; s.last = i; return true; },
