@@ -313,8 +313,8 @@ const game=(()=>{
     if(o.state!=='run'&&document.getElementById('game').classList.contains('on')&&o.state!=='over')o.start()};
   function step(){
     if(queue.length)dir=queue.shift();
-    const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
-    if(h.x<0||h.y<0||h.x>=N||h.y>=N||snake.some(s=>s.x===h.x&&s.y===h.y)){
+    const h={x:(snake[0].x+dir.x+N)%N,y:(snake[0].y+dir.y+N)%N};
+    if(snake.some(s=>s.x===h.x&&s.y===h.y)){
       o.state='over';
       if(score>best){best=score;store.set('snakeBest',best);bestEl.textContent=best}
       o.overlay('Khsrti!',`Score dyalk: ${score}`+(score&&score===best?' — record jdid!':''),'3awd');o.state='over';return}
