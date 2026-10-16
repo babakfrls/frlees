@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>frlees</title>
+<meta name="theme-color" content="#2f8cff">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="frlees">
+<style>
+  :root{
+    --bg:#ffffff; --bg2:#f3f8ff;
+    --dot:#7cc4ff; --dotA:.55;
+    --text:#0d1b2e; --muted:#5b6b82;
+    --card:rgba(255,255,255,.72); --cardBorder:rgba(70,140,220,.18);
+    --accent:#2f8cff; --accent2:#7cc4ff;
+    --trail:47,140,255;
+    --shadow:0 10px 30px rgba(30,90,170,.12);
+    --board:#f6faff; --grid:rgba(47,140,255,.07);
+    --snake:#2f8cff; --snakeHead:#1565d8; --food:#ff5a7a;
+  }
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+    --bg:#06122b; --bg2:#0a1c40;
+    --dot:#5aa9ff; --dotA:.28;
+    --text:#e6efff; --muted:#8ea3c4;
+    --card:rgba(14,32,70,.62); --cardBorder:rgba(120,180,255,.14);
+    --accent:#4ea2ff; --accent2:#7cc4ff;
+    --trail:124,196,255;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+    --board:#081a3c; --grid:rgba(124,196,255,.05);
+    --snake:#4ea2ff; --snakeHead:#9fd2ff; --food:#ff6b8b;;color-scheme:dark}}
+  :root[data-theme="dark"]{
+    --bg:#06122b; --bg2:#0a1c40;
+    --dot:#5aa9ff; --dotA:.28;
+    --text:#e6efff; --muted:#8ea3c4;
+    --card:rgba(14,32,70,.62); --cardBorder:rgba(120,180,255,.14);
+    --accent:#4ea2ff; --accent2:#7cc4ff;
+    --trail:124,196,255;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+    --board:#081a3c; --grid:rgba(124,196,255,.05);
+    --snake:#4ea2ff; --snakeHead:#9fd2ff; --food:#ff6b8b;;color-scheme:dark}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+    background:radial-gradient(1200px 800px at 20% 0%,var(--bg2),var(--bg));
+    color:var(--text); user-select:none; transition:background .4s,color .4s;
+  }
+  #bg,#trail{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+  #bg{z-index:0} #trail{z-index:50}
+  .app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+
+  header{display:flex;align-items:center;gap:12px;padding:18px 22px;padding-top:max(18px,env(safe-area-inset-top))}
+  header img{width:46px;height:46px;border-radius:13px;box-shadow:var(--shadow)}
+  .brand h1{font-size:20px;font-weight:700;letter-spacing:.3px}
+  .brand small{font-size:12px;color:var(--muted)}
+  .sp{flex:1}
+  .iconbtn{
+    width:44px;height:44px;border-radius:14px;border:1px solid var(--cardBorder);
+    background:var(--card);backdrop-filter:blur(12px);color:var(--text);
+    display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s;
+  }
+  .iconbtn:hover{transform:translateY(-2px)} .iconbtn:active{transform:scale(.95)}
+  .iconbtn svg{width:20px;height:20px}
+  .sun{display:none} .dk .sun{display:block} .dk .moon{display:none}
+
+  .view{flex:1;overflow:auto;padding:10px 22px 30px;display:none;animation:fade .35s ease}
+  .view.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .hello{margin:14px 0 22px}
+  .hello p{color:var(--muted);font-size:14px}
+  .hello h2{font-size:30px;font-weight:800;margin-top:2px}
+  .hello h2 span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .label{font-size:12px;font-weight:700;letter-spacing:1.4px;color:var(--muted);margin-bottom:12px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+  @media (max-width:480px){.card{padding:15px}.card .ic{width:46px;height:46px;border-radius:14px;margin-bottom:12px}.card .ic svg{width:24px;height:24px}.card h3{font-size:16px}.card p{font-size:12px}.card .tag{top:12px;right:12px;font-size:10px}}
+  .card{
+    position:relative;padding:20px;border-radius:22px;border:1px solid var(--cardBorder);
+    background:var(--card);backdrop-filter:blur(14px);box-shadow:var(--shadow);
+    cursor:pointer;overflow:hidden;transition:transform .2s,box-shadow .2s;
+  }
+  .card:hover{transform:translateY(-4px)}
+  .card:active{transform:scale(.98)}
+  .card .ic{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;margin-bottom:14px;
+    box-shadow:0 8px 20px rgba(47,140,255,.35)}
+  .card .ic svg{width:28px;height:28px}
+  .card h3{font-size:18px;margin-bottom:4px}
+  .card p{font-size:13px;color:var(--muted)}
+  .card .tag{position:absolute;top:16px;right:16px;font-size:11px;font-weight:700;padding:4px 9px;border-radius:99px;
+    background:rgba(47,140,255,.14);color:var(--accent)}
+  footer{text-align:center;font-size:12px;color:var(--muted);padding:26px 0 6px;opacity:.8}
+
+  /* ===== Snake ===== */
+  #game{display:none;flex-direction:column;align-items:center}
+  #game.on{display:flex}
+  .gtop{width:100%;max-width:520px;display:flex;align-items:center;gap:10px;margin:4px 0 14px}
+  .gtop h2{font-size:20px}
+  .score{display:flex;gap:8px}
+  .pill{padding:7px 12px;border-radius:12px;background:var(--card);border:1px solid var(--cardBorder);font-size:13px;font-weight:600;backdrop-filter:blur(10px)}
+  .pill b{color:var(--accent)}
+  .boardwrap{position:relative;touch-action:none;width:min(520px,100%);aspect-ratio:1;border-radius:22px;overflow:hidden;
+    border:1px solid var(--cardBorder);box-shadow:var(--shadow);background:var(--board)}
+  #board{width:100%;height:100%;display:block}
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    background:rgba(0,0,0,.0);backdrop-filter:blur(4px);text-align:center;padding:20px}
+  .overlay.hide{display:none}
+  .overlay h3{font-size:26px}
+  .overlay p{color:var(--muted);font-size:14px}
+  .btn{margin-top:6px;padding:12px 26px;border:0;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 20px rgba(47,140,255,.35);transition:transform .15s}
+  .btn:active{transform:scale(.96)}
+  .hint{margin-top:14px;font-size:12px;color:var(--muted);text-align:center}
+  .pad{display:none;margin-top:16px;grid-template-columns:repeat(3,62px);grid-template-rows:repeat(2,62px);gap:8px}
+  .pad button{border-radius:16px;border:1px solid var(--cardBorder);background:var(--card);color:var(--text);
+    backdrop-filter:blur(10px);display:grid;place-items:center;cursor:pointer}
+  .pad button:active{background:rgba(47,140,255,.25)}
+  .pad svg{width:24px;height:24px}
+  .pad .u{grid-column:2;grid-row:1}.pad .l{grid-column:1;grid-row:2}.pad .d{grid-column:2;grid-row:2}.pad .r{grid-column:3;grid-row:2}
+  @media (pointer:coarse){.pad{display:grid}.hint .k{display:none}}
+  @media (pointer:fine){.hint .t{display:none}}
+
+  .dl{display:none;align-items:center;gap:8px;height:44px;padding:0 14px;border-radius:14px;border:0;cursor:pointer;font-weight:700;font-size:14px;color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 20px rgba(47,140,255,.35)}
+  .dl svg{width:18px;height:18px}
+  .dl.show{display:flex}
+  .modal{position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;justify-content:center;background:rgba(3,10,25,.45);padding:16px}
+  .modal.on{display:flex}
+  .sheet{width:100%;max-width:420px;border-radius:24px;padding:22px;background:var(--bg);border:1px solid var(--cardBorder);box-shadow:var(--shadow);animation:fade .25s ease}
+  .sheet h3{font-size:20px;margin-bottom:4px}
+  .sheet p{color:var(--muted);font-size:14px;margin-bottom:14px}
+  .sheet .btn{display:block;width:100%;text-align:center;text-decoration:none;margin:8px 0 0}
+  .sheet .alt{background:var(--card);color:var(--text);border:1px solid var(--cardBorder);box-shadow:none}
+  .sheet ol{margin:6px 0 0 18px;color:var(--muted);font-size:14px;line-height:1.7}
+  @media (max-width:480px){.dl span{display:none}.dl{padding:0;width:44px;justify-content:center}}
+</style>
+</head>
+<body>
+
+
+<canvas id="bg"></canvas>
+<canvas id="trail"></canvas>
+
+<div class="app">
+  <header>
+    <img src="logo.png" alt="logo">
+    <div class="brand"><h1>frlees</h1><small>dev by : frlees</small></div>
+    <div class="sp"></div>
+    <button class="dl" id="dlBtn" title="Stabli l'app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span>Stabli l'app</span></button>
+    <button class="iconbtn" id="back" title="Rje3" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <button class="iconbtn" id="themeBtn" title="Theme">
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </header>
+
+  <!-- HOME -->
+  <main class="view on" id="home">
+    <div class="hello">
+      <p>Mr7ba bik f</p>
+      <h2><span>frlees</span> app</h2>
+    </div>
+    <div class="label">KHTAR</div>
+    <div class="grid" id="apps">
+      <div class="card" data-open="game">
+        <span class="tag">Lo3ba</span>
+        <div class="ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h6a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h10"/><circle cx="19" cy="6" r="1.2" fill="currentColor"/></svg>
+        </div>
+        <h3>L7nch</h3>
+        <p>Kol l'fakiha w kbr — ma tdrbch f rask</p>
+      </div>
+      <div class="card" data-open="imposter">
+        <span class="tag">Party</span>
+        <div class="ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/><path d="M9.5 9h.01M14.5 9h.01"/></svg>
+        </div>
+        <h3>Imposter</h3>
+        <p>Chkoun li ma3arfch l'kelma?</p>
+      </div>
+      <div class="card" data-open="xo">
+        <span class="tag">Jdid</span>
+        <div class="ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l6 6M10 4l-6 6"/><circle cx="17" cy="17" r="3.5"/></svg>
+        </div>
+        <h3>XO</h3>
+        <p>3 f stra wa7da</p>
+      </div>
+      <div class="card" data-open="c4">
+        <span class="tag">Jdid</span>
+        <div class="ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8" cy="10" r="1.5"/><circle cx="12" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/><circle cx="8" cy="15" r="1.5"/><circle cx="12" cy="15" r="1.5"/><circle cx="16" cy="15" r="1.5"/></svg>
+        </div>
+        <h3>Connect 4</h3>
+        <p>4 d l'n9at mtab3in</p>
+      </div>
+      <!-- l7wayj jdad ghadi yzado hna -->
+    </div>
+    <footer>dev by : frlees</footer>
+  </main>
+
+  <!-- XO w CONNECT 4 -->
+  <main class="view" id="xo"></main>
+  <main class="view" id="c4"></main>
+
+  <!-- IMPOSTER -->
+  <main class="view" id="imposter"></main>
+
+  <!-- SNAKE -->
+  <main class="view" id="game">
+    <div class="gtop">
+      <h2>L7nch</h2><div class="sp"></div>
+      <div class="score">
+        <div class="pill">Score <b id="sc">0</b></div>
+        <div class="pill">Record <b id="best">0</b></div>
+      </div>
+    </div>
+    <div class="boardwrap">
+      <canvas id="board"></canvas>
+      <div class="overlay" id="ov">
+        <h3 id="ovT">L7nch</h3>
+        <p id="ovP">Kol l'fakiha bach tkbr. Ma tdrbch f rask!</p>
+        <button class="btn" id="play">Bda</button>
+      </div>
+    </div>
+    <div class="pad">
+      <button class="u" data-d="0,-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 15l6-6 6 6"/></svg></button>
+      <button class="l" data-d="-1,0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <button class="d" data-d="0,1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button class="r" data-d="1,0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <div class="hint"><span class="k">Flèches wla W A S D bach t7rk · Espace = pause</span><span class="t">Mss7 b sb3ek 3la l'ecran wla khdm b l'boutons</span></div>
+  </main>
+</div>
+
+<script>
+/* ---------- storage (safe) ---------- */
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+/* ---------- theme ---------- */
+const root=document.documentElement;
+const saved=store.get('theme',null);if(saved)root.dataset.theme=saved;
+const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+const syncIcon=()=>document.body.classList.toggle('dk',isDark());syncIcon();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncIcon);
+document.getElementById('themeBtn').onclick=()=>{
+  root.dataset.theme=isDark()?'light':'dark';syncIcon();
+  store.set('theme',root.dataset.theme);
+  if(game.state!=='run') game.draw();
+};
+const css=n=>getComputedStyle(root).getPropertyValue(n).trim();
+
+/* ---------- background moving dots ---------- */
+const bg=document.getElementById('bg'),bx=bg.getContext('2d');
+const tr=document.getElementById('trail'),tx=tr.getContext('2d');
+let W,H,DPR,dots=[];
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
+  for(const c of [bg,tr]){c.width=W*DPR;c.height=H*DPR}
+  bx.setTransform(DPR,0,0,DPR,0,0);tx.setTransform(DPR,0,0,DPR,0,0);
+  const n=Math.round(Math.min(110,W*H/11000));
+  dots=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2+1,
+    vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,p:Math.random()*6.28}));
+}
+addEventListener('resize',()=>{resize();game.fit()});
+resize();
+
+/* ---------- mouse trail (thin, fades, stays short) ---------- */
+let pts=[];const LIFE=260;
+addEventListener('pointermove',e=>{pts.push({x:e.clientX,y:e.clientY,t:performance.now()})},{passive:true});
+
+function frame(now){
+  // dots
+  bx.clearRect(0,0,W,H);
+  const col=css('--dot'),a=parseFloat(css('--dotA'));
+  bx.fillStyle=col;
+  for(const d of dots){
+    d.x+=d.vx;d.y+=d.vy;d.p+=.02;
+    if(d.x<-5)d.x=W+5;if(d.x>W+5)d.x=-5;if(d.y<-5)d.y=H+5;if(d.y>H+5)d.y=-5;
+    bx.globalAlpha=a*(.6+.4*Math.sin(d.p));
+    bx.beginPath();bx.arc(d.x,d.y,d.r,0,6.283);bx.fill();
+  }
+  bx.globalAlpha=1;
+  // trail
+  tx.clearRect(0,0,W,H);
+  pts=pts.filter(p=>now-p.t<LIFE);
+  if(pts.length>1){
+    const rgb=css('--trail');
+    tx.lineCap='round';tx.lineJoin='round';
+    for(let i=1;i<pts.length;i++){
+      const k=1-(now-pts[i].t)/LIFE;
+      tx.strokeStyle=`rgba(${rgb},${k*.9})`;
+      tx.lineWidth=.6+k*1.6;
+      tx.beginPath();tx.moveTo(pts[i-1].x,pts[i-1].y);tx.lineTo(pts[i].x,pts[i].y);tx.stroke();
+    }
+  }
+  game.tick(now);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- navigation ---------- */
+const back=document.getElementById('back');
+function show(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id===id));
+  back.style.display=id==='home'?'none':'grid';
+  if(id==='game'){game.fit();game.reset();game.overlay('L7nch','Kol l\'fakiha bach tkbr. Ma tdrbch f rask!','Bda')}
+  else game.state='idle';
+}
+document.querySelectorAll('[data-open]').forEach(c=>c.onclick=()=>show(c.dataset.open));
+back.onclick=()=>show('home');
+
+/* ---------- snake ---------- */
+const game=(()=>{
+  const cv=document.getElementById('board'),g=cv.getContext('2d');
+  const N=20; let S, snake, dir, queue, food, score, last, speed, parts=[];
+  const ov=document.getElementById('ov'),scEl=document.getElementById('sc'),bestEl=document.getElementById('best');
+  let best=+store.get('snakeBest',0); bestEl.textContent=best;
+  const o={state:'idle'};
+  o.fit=()=>{const r=cv.getBoundingClientRect();if(!r.width)return;const d=Math.min(devicePixelRatio||1,2);
+    cv.width=r.width*d;cv.height=r.height*d;S=cv.width/N;o.draw()};
+  o.reset=()=>{snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];dir={x:1,y:0};queue=[];score=0;speed=130;scEl.textContent=0;place();o.draw()};
+  function place(){do{food={x:Math.random()*N|0,y:Math.random()*N|0}}while(snake.some(s=>s.x===food.x&&s.y===food.y))}
+  o.overlay=(t,p,b)=>{document.getElementById('ovT').textContent=t;document.getElementById('ovP').textContent=p;
+    document.getElementById('play').textContent=b;ov.classList.remove('hide');o.state=o.state==='run'?'pause':o.state==='over'?'over':'idle'};
+  o.start=()=>{if(o.state==='over'||o.state==='idle'&&!snake)o.reset();if(o.state==='over')o.reset();ov.classList.add('hide');o.state='run';last=performance.now()};
+  o.turn=(x,y)=>{const l=queue.length?queue[queue.length-1]:dir;if(l.x===-x&&l.y===-y||l.x===x&&l.y===y)return;if(queue.length<3)queue.push({x,y});
+    if(o.state!=='run'&&document.getElementById('game').classList.contains('on')&&o.state!=='over')o.start()};
+  function step(){
+    if(queue.length)dir=queue.shift();
+    const h={x:(snake[0].x+dir.x+N)%N,y:(snake[0].y+dir.y+N)%N};
+    if(snake.some(s=>s.x===h.x&&s.y===h.y)){
+      o.state='over';
+      if(score>best){best=score;store.set('snakeBest',best);bestEl.textContent=best}
+      o.overlay('Khsrti!',`Score dyalk: ${score}`+(score&&score===best?' — record jdid!':''),'3awd');o.state='over';return}
+    snake.unshift(h);
+    if(h.x===food.x&&h.y===food.y){score++;scEl.textContent=score;speed=Math.max(65,130-score*2.5);burst(food);place()}
+    else snake.pop();
+  }
+  function burst(f){for(let i=0;i<14;i++){const a=Math.random()*6.28,v=Math.random()*2+1;
+    parts.push({x:(f.x+.5)*S,y:(f.y+.5)*S,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:1})}}
+  o.tick=now=>{
+    if(!document.getElementById('game').classList.contains('on'))return;
+    if(o.state==='run'&&now-last>=speed){last=now;step()}
+    o.draw();
+  };
+  function rr(x,y,w,h,r){g.beginPath();g.roundRect(x,y,w,h,r);g.fill()}
+  o.draw=()=>{
+    if(!S||!snake)return;
+    g.clearRect(0,0,cv.width,cv.height);
+    g.fillStyle=css('--grid');
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++)if((x+y)%2)g.fillRect(x*S,y*S,S,S);
+    // food
+    const pulse=1+Math.sin(performance.now()/180)*.08;
+    g.fillStyle=css('--food');g.shadowColor=css('--food');g.shadowBlur=S*.6;
+    g.beginPath();g.arc((food.x+.5)*S,(food.y+.5)*S,S*.34*pulse,0,6.283);g.fill();g.shadowBlur=0;
+    // snake
+    const c1=css('--snake'),c2=css('--snakeHead');
+    snake.forEach((s,i)=>{
+      g.globalAlpha=1-i/(snake.length*1.6);
+      g.fillStyle=i?c1:c2;const p=i?S*.12:S*.06;rr(s.x*S+p,s.y*S+p,S-2*p,S-2*p,S*.32);
+    });
+    g.globalAlpha=1;
+    // eyes
+    const h=snake[0],cx=(h.x+.5)*S,cy=(h.y+.5)*S,ex=dir.y?S*.18:0,ey=dir.x?S*.18:0;
+    g.fillStyle=css('--board');
+    for(const sgn of [-1,1]){g.beginPath();g.arc(cx+dir.x*S*.15+ex*sgn,cy+dir.y*S*.15+ey*sgn,S*.08,0,6.283);g.fill()}
+    // particles
+    parts=parts.filter(p=>(p.l-=.04)>0);
+    g.fillStyle=css('--food');
+    for(const p of parts){p.x+=p.vx*S*.08;p.y+=p.vy*S*.08;g.globalAlpha=p.l;g.beginPath();g.arc(p.x,p.y,S*.08,0,6.283);g.fill()}
+    g.globalAlpha=1;
+  };
+  document.getElementById('play').onclick=()=>{if(o.state==='over')o.reset();o.start()};
+  return o;
+})();
+
+/* controls */
+const K={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0],z:[0,-1],q:[-1,0]};
+addEventListener('keydown',e=>{
+  if(!document.getElementById('game').classList.contains('on'))return;
+  const k=K[e.key.length===1?e.key.toLowerCase():e.key];
+  if(k){e.preventDefault();game.turn(...k)}
+  else if(e.key===' '||e.key==='Enter'){e.preventDefault();
+    if(game.state==='run')game.overlay('Pause','Brk Espace bach tkml','Kml');
+    else{if(game.state==='over')game.reset();game.start()}}
+  else if(e.key==='Escape')show('home');
+});
+document.querySelectorAll('.pad button').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();game.turn(...b.dataset.d.split(',').map(Number))}));
+let ts=null;const bw=document.querySelector('.boardwrap');
+bw.addEventListener('touchstart',e=>{ts=e.touches[0]},{passive:true});
+bw.addEventListener('touchend',e=>{if(!ts)return;const t=e.changedTouches[0],dx=t.clientX-ts.clientX,dy=t.clientY-ts.clientY;ts=null;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;Math.abs(dx)>Math.abs(dy)?game.turn(Math.sign(dx),0):game.turn(0,Math.sign(dy))});
+
+requestAnimationFrame(frame);
+</script>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h3>Stabli frlees</h3>
+    <p>L'app katjib dima akhir version, ma khassekch tbddlha.</p>
+    <div id="mAndroid">
+      <a class="btn" id="apkLink" href="#">Telecharger l'APK (Android)</a>
+      <button class="btn alt" id="pwaBtn" style="display:none">Stabli direct mn Chrome</button>
+      <ol><li>Fte7 frlees.apk mlli ykml</li><li>9bl "sources inconnues" ila tlb mnk</li><li>Drb Installer</li></ol>
+    </div>
+    <div id="mPc" style="display:none">
+      <a class="btn" id="exeLink" href="#">Telecharger l'app PC (Windows)</a>
+      <ol><li>Fte7 frlees-setup.exe mlli ykml</li><li>Ila tla3 "Windows a protégé votre ordinateur": Informations complémentaires › Exécuter quand même</li><li>L'app katstabla w kayban raccourci f bureau</li></ol>
+    </div>
+    <div id="mIos" style="display:none">
+      <ol><li>Fte7 had l'page f Safari</li><li>Drb 3la bouton Partager</li><li>Khtar "Sur l'écran d'accueil"</li></ol>
+    </div>
+    <button class="btn alt" id="mClose">Sedd</button>
+  </div>
+</div>
+<script>
+(function(){
+  const ua=navigator.userAgent, inApp=/frleesApp/.test(ua),
+    standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone,
+    ios=/iPhone|iPad|iPod/.test(ua), android=/Android/.test(ua);
+  const dl=document.getElementById('dlBtn'),m=document.getElementById('modal');
+  // lien dyal APK (GitHub Releases) kaytl3 mn l'adresse dyal site
+  const owner=location.hostname.split('.')[0], repo=location.pathname.split('/').filter(Boolean)[0]||'frlees';
+  document.getElementById('apkLink').href=location.hostname.endsWith('github.io')
+    ?`https://github.com/${owner}/${repo}/releases/download/apk/frlees.apk`:'#';
+  document.getElementById('exeLink').href=location.hostname.endsWith('github.io')
+    ?`https://github.com/${owner}/${repo}/releases/download/pc/frlees-setup.exe`:'#';
+  const win=/Windows/.test(ua)&&!/frleesPC/.test(ua);
+  const inPc=location.protocol!=='https:'||/[?&]pc=1/.test(location.search)||document.referrer.startsWith('http://127.0.0.1');
+  if(!inApp&&!standalone&&(android||ios||(win&&!inPc)))dl.classList.add('show');
+  if(win&&!android&&!ios){document.getElementById('mAndroid').style.display='none';document.getElementById('mPc').style.display='block'}
+  if(ios){document.getElementById('mAndroid').style.display='none';document.getElementById('mIos').style.display='block'}
+  let ev=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;document.getElementById('pwaBtn').style.display='block'});
+  document.getElementById('pwaBtn').onclick=async()=>{if(!ev)return;ev.prompt();await ev.userChoice;ev=null;m.classList.remove('on')};
+  dl.onclick=()=>m.classList.add('on');
+  document.getElementById('mClose').onclick=()=>m.classList.remove('on');
+  m.onclick=e=>{if(e.target===m)m.classList.remove('on')};
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+<script src="imposter.js"></script>
+<script src="jeux.js"></script>
+</body>
+</html>
