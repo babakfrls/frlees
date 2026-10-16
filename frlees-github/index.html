@@ -322,7 +322,7 @@ back.onclick=()=>show('home');
 const game=(()=>{
   const cv=document.getElementById('board'),g=cv.getContext('2d');
   // f tlifoun l'morabba3at kbar (14x14), f PC 20x20
-  const N=matchMedia('(pointer:coarse)').matches||innerWidth<600?15:20;
+  const N=matchMedia('(pointer:coarse)').matches||innerWidth<600?16:20;
   const BASE=N<20?150:130;
   let S, snake, prev, dir, queue, food, score, last, speed, parts=[], gridC=null;
   const ov=document.getElementById('ov'),scEl=document.getElementById('sc'),bestEl=document.getElementById('best');
