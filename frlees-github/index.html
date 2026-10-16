@@ -69,6 +69,7 @@
 
   .view{flex:1;overflow:auto;padding:10px 22px 30px;display:none;animation:fade .35s ease}
   .view.on{display:block}
+  #game{touch-action:none;overscroll-behavior:contain}
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
   .hello{margin:14px 0 22px}
@@ -104,7 +105,7 @@
   .score{display:flex;gap:8px}
   .pill{padding:7px 12px;border-radius:12px;background:var(--card);border:1px solid var(--cardBorder);font-size:13px;font-weight:600;backdrop-filter:blur(10px)}
   .pill b{color:var(--accent)}
-  .boardwrap{position:relative;touch-action:none;width:min(520px,100%);aspect-ratio:1;border-radius:22px;overflow:hidden;
+  .boardwrap{position:relative;flex:none;touch-action:none;width:min(520px,100%);aspect-ratio:1;border-radius:22px;overflow:hidden;
     border:1px solid var(--cardBorder);box-shadow:var(--shadow);background:var(--board)}
   #board{width:100%;height:100%;display:block}
   .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
@@ -236,7 +237,7 @@
       <button class="d" data-d="0,1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>
       <button class="r" data-d="1,0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
-    <div class="hint"><span class="k">Flèches wla W A S D bach t7rk · Espace = pause</span><span class="t">Mss7 b sb3ek 3la l'ecran wla khdm b l'boutons</span></div>
+    <div class="hint"><span class="k">Flèches wla W A S D bach t7rk · Espace = pause</span><span class="t">Mse7 b sb3ek f ay blassa 3la l'ecran</span></div>
   </main>
 </div>
 
@@ -248,14 +249,15 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}ca
 const root=document.documentElement;
 const saved=store.get('theme',null);if(saved)root.dataset.theme=saved;
 const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
-const syncIcon=()=>document.body.classList.toggle('dk',isDark());syncIcon();
+const cssCache={};
+const syncIcon=()=>{for(const k in cssCache)delete cssCache[k];document.body.classList.toggle('dk',isDark());try{game.regrid()}catch(e){}};syncIcon();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncIcon);
 document.getElementById('themeBtn').onclick=()=>{
   root.dataset.theme=isDark()?'light':'dark';syncIcon();
   store.set('theme',root.dataset.theme);
   if(game.state!=='run') game.draw();
 };
-const css=n=>getComputedStyle(root).getPropertyValue(n).trim();
+const css=n=>cssCache[n]??(cssCache[n]=getComputedStyle(root).getPropertyValue(n).trim());
 
 /* ---------- background moving dots ---------- */
 const bg=document.getElementById('bg'),bx=bg.getContext('2d');
@@ -319,67 +321,84 @@ back.onclick=()=>show('home');
 /* ---------- snake ---------- */
 const game=(()=>{
   const cv=document.getElementById('board'),g=cv.getContext('2d');
-  const N=20; let S, snake, dir, queue, food, score, last, speed, parts=[];
+  // f tlifoun l'morabba3at kbar (14x14), f PC 20x20
+  const N=matchMedia('(pointer:coarse)').matches||innerWidth<600?14:20;
+  const BASE=N<20?150:130;
+  let S, snake, prev, dir, queue, food, score, last, speed, parts=[], gridC=null;
   const ov=document.getElementById('ov'),scEl=document.getElementById('sc'),bestEl=document.getElementById('best');
   let best=+store.get('snakeBest',0); bestEl.textContent=best;
   const o={state:'idle'};
+  o.regrid=()=>{if(!S)return;gridC=document.createElement('canvas');gridC.width=cv.width;gridC.height=cv.height;
+    const c=gridC.getContext('2d');c.fillStyle=css('--grid');
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++)if((x+y)%2)c.fillRect(x*S,y*S,S,S);o.draw()};
   o.fit=()=>{const r=cv.getBoundingClientRect();if(!r.width)return;const d=Math.min(devicePixelRatio||1,2);
-    cv.width=r.width*d;cv.height=r.height*d;S=cv.width/N;o.draw()};
-  o.reset=()=>{snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];dir={x:1,y:0};queue=[];score=0;speed=130;scEl.textContent=0;place();o.draw()};
+    cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);S=cv.width/N;o.regrid()};
+  o.reset=()=>{const m=N>>1;snake=[{x:m,y:m},{x:m-1,y:m},{x:m-2,y:m}];prev=snake.map(p=>({...p}));dir={x:1,y:0};queue=[];score=0;speed=BASE;scEl.textContent=0;place();o.draw()};
   function place(){do{food={x:Math.random()*N|0,y:Math.random()*N|0}}while(snake.some(s=>s.x===food.x&&s.y===food.y))}
   o.overlay=(t,p,b)=>{document.getElementById('ovT').textContent=t;document.getElementById('ovP').textContent=p;
     document.getElementById('play').textContent=b;ov.classList.remove('hide');o.state=o.state==='run'?'pause':o.state==='over'?'over':'idle'};
-  o.start=()=>{if(o.state==='over'||o.state==='idle'&&!snake)o.reset();if(o.state==='over')o.reset();ov.classList.add('hide');o.state='run';last=performance.now()};
+  o.start=()=>{if(o.state==='over'||!snake)o.reset();ov.classList.add('hide');o.state='run';last=performance.now()};
   o.turn=(x,y)=>{const l=queue.length?queue[queue.length-1]:dir;if(l.x===-x&&l.y===-y||l.x===x&&l.y===y)return;if(queue.length<3)queue.push({x,y});
     if(o.state!=='run'&&document.getElementById('game').classList.contains('on')&&o.state!=='over')o.start()};
   function step(){
     if(queue.length)dir=queue.shift();
     const h={x:(snake[0].x+dir.x+N)%N,y:(snake[0].y+dir.y+N)%N};
-    if(snake.some(s=>s.x===h.x&&s.y===h.y)){
+    if(snake.some((s,i)=>i<snake.length-1&&s.x===h.x&&s.y===h.y)){
       o.state='over';
+      if(navigator.vibrate)try{navigator.vibrate(120)}catch(e){}
       if(score>best){best=score;store.set('snakeBest',best);bestEl.textContent=best}
       o.overlay('Khsrti!',`Score dyalk: ${score}`+(score&&score===best?' — record jdid!':''),'3awd');o.state='over';return}
+    prev=snake.map(p=>({...p}));
     snake.unshift(h);
-    if(h.x===food.x&&h.y===food.y){score++;scEl.textContent=score;speed=Math.max(65,130-score*2.5);burst(food);place()}
+    if(h.x===food.x&&h.y===food.y){score++;scEl.textContent=score;speed=Math.max(70,BASE-score*2.5);burst(food);place();prev.push({...prev[prev.length-1]})}
     else snake.pop();
   }
   function burst(f){for(let i=0;i<14;i++){const a=Math.random()*6.28,v=Math.random()*2+1;
     parts.push({x:(f.x+.5)*S,y:(f.y+.5)*S,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:1})}}
   o.tick=now=>{
     if(!document.getElementById('game').classList.contains('on'))return;
-    if(o.state==='run'&&now-last>=speed){last=now;step()}
-    o.draw();
+    if(o.state==='run'){if(now-last>speed*3)last=now-speed;while(o.state==='run'&&now-last>=speed){last+=speed;step()}}
+    o.draw(now);
   };
   function rr(x,y,w,h,r){g.beginPath();g.roundRect(x,y,w,h,r);g.fill()}
-  o.draw=()=>{
+  // l7araka smooth: kol 9eta3 kaytzle9 mn l'blassa l9dima l jdida
+  function lerpPos(i,t){
+    const c=snake[i],p=prev[i]||c;
+    if(Math.abs(c.x-p.x)>1||Math.abs(c.y-p.y)>1)return {x:c.x,y:c.y};
+    return {x:p.x+(c.x-p.x)*t,y:p.y+(c.y-p.y)*t};
+  }
+  o.draw=(now)=>{
     if(!S||!snake)return;
+    now=now||performance.now();
+    const t=o.state==='run'?Math.min(1,(now-last)/speed):1;
     g.clearRect(0,0,cv.width,cv.height);
-    g.fillStyle=css('--grid');
-    for(let y=0;y<N;y++)for(let x=0;x<N;x++)if((x+y)%2)g.fillRect(x*S,y*S,S,S);
-    // food
-    const pulse=1+Math.sin(performance.now()/180)*.08;
-    g.fillStyle=css('--food');g.shadowColor=css('--food');g.shadowBlur=S*.6;
-    g.beginPath();g.arc((food.x+.5)*S,(food.y+.5)*S,S*.34*pulse,0,6.283);g.fill();g.shadowBlur=0;
-    // snake
-    const c1=css('--snake'),c2=css('--snakeHead');
-    snake.forEach((s,i)=>{
-      g.globalAlpha=1-i/(snake.length*1.6);
-      g.fillStyle=i?c1:c2;const p=i?S*.12:S*.06;rr(s.x*S+p,s.y*S+p,S-2*p,S-2*p,S*.32);
-    });
+    if(gridC)g.drawImage(gridC,0,0);
+    // fakiha
+    const pulse=1+Math.sin(now/180)*.08,fx=(food.x+.5)*S,fy=(food.y+.5)*S,fc=css('--food');
+    g.fillStyle=fc;g.globalAlpha=.22;g.beginPath();g.arc(fx,fy,S*.55*pulse,0,6.283);g.fill();g.globalAlpha=1;
+    g.beginPath();g.arc(fx,fy,S*.34*pulse,0,6.283);g.fill();
+    // l7nch
+    const c1=css('--snake'),c2=css('--snakeHead'),L=snake.length;
+    for(let i=L-1;i>=0;i--){
+      const q=lerpPos(i,t);
+      g.globalAlpha=1-i/(L*1.6);
+      g.fillStyle=i?c1:c2;const p=i?S*.1:S*.04;rr(q.x*S+p,q.y*S+p,S-2*p,S-2*p,S*.32);
+    }
     g.globalAlpha=1;
-    // eyes
-    const h=snake[0],cx=(h.x+.5)*S,cy=(h.y+.5)*S,ex=dir.y?S*.18:0,ey=dir.x?S*.18:0;
+    // l3inin
+    const h=lerpPos(0,t),cx=(h.x+.5)*S,cy=(h.y+.5)*S,ex=dir.y?S*.18:0,ey=dir.x?S*.18:0;
     g.fillStyle=css('--board');
     for(const sgn of [-1,1]){g.beginPath();g.arc(cx+dir.x*S*.15+ex*sgn,cy+dir.y*S*.15+ey*sgn,S*.08,0,6.283);g.fill()}
     // particles
-    parts=parts.filter(p=>(p.l-=.04)>0);
-    g.fillStyle=css('--food');
-    for(const p of parts){p.x+=p.vx*S*.08;p.y+=p.vy*S*.08;g.globalAlpha=p.l;g.beginPath();g.arc(p.x,p.y,S*.08,0,6.283);g.fill()}
-    g.globalAlpha=1;
+    if(parts.length){parts=parts.filter(p=>(p.l-=.04)>0);
+      g.fillStyle=fc;
+      for(const p of parts){p.x+=p.vx*S*.08;p.y+=p.vy*S*.08;g.globalAlpha=p.l;g.beginPath();g.arc(p.x,p.y,S*.08,0,6.283);g.fill()}
+      g.globalAlpha=1;}
   };
   document.getElementById('play').onclick=()=>{if(o.state==='over')o.reset();o.start()};
   return o;
 })();
+
 
 /* controls */
 const K={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0],z:[0,-1],q:[-1,0]};
@@ -393,10 +412,13 @@ addEventListener('keydown',e=>{
   else if(e.key==='Escape')show('home');
 });
 document.querySelectorAll('.pad button').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();game.turn(...b.dataset.d.split(',').map(Number))}));
-let ts=null;const bw=document.querySelector('.boardwrap');
-bw.addEventListener('touchstart',e=>{ts=e.touches[0]},{passive:true});
-bw.addEventListener('touchend',e=>{if(!ts)return;const t=e.changedTouches[0],dx=t.clientX-ts.clientX,dy=t.clientY-ts.clientY;ts=null;
-  if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;Math.abs(dx)>Math.abs(dy)?game.turn(Math.sign(dx),0):game.turn(0,Math.sign(dy))});
+// swipe: kayt7rk dghya mlli katmse7 (machi ghir mlli katrf3 sb3ek)
+let ts=null;const gv=document.getElementById('game');
+gv.addEventListener('touchstart',e=>{if(e.target.closest('.pad,button'))return;const t=e.touches[0];ts={x:t.clientX,y:t.clientY}},{passive:true});
+gv.addEventListener('touchmove',e=>{if(!ts)return;e.preventDefault();const t=e.touches[0],dx=t.clientX-ts.x,dy=t.clientY-ts.y;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<18)return;
+  Math.abs(dx)>Math.abs(dy)?game.turn(Math.sign(dx),0):game.turn(0,Math.sign(dy));ts={x:t.clientX,y:t.clientY}},{passive:false});
+gv.addEventListener('touchend',()=>{ts=null},{passive:true});
 
 requestAnimationFrame(frame);
 </script>
