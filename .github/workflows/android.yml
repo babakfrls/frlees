@@ -17,7 +17,7 @@ jobs:
       - name: Copy site into the app (offline copy)
         run: |
           mkdir -p frlees-github/android/app/src/main/assets
-          cp frlees-github/index.html frlees-github/logo.png frlees-github/android/app/src/main/assets/
+          cp frlees-github/index.html frlees-github/logo.png frlees-github/imposter.js frlees-github/android/app/src/main/assets/
       - name: Build APK
         working-directory: frlees-github/android
         run: |
