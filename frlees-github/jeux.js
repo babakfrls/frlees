@@ -147,6 +147,7 @@ function makeGame(cfg) {
   const isBotTurn = () => s.vsBot && playerOf(s.turn) === 1;
 
   function play() {
+    s.locked = s.over || isBotTurn();
     const pl = (i) => {
       const side = i === s.first ? 0 : 1;
       return `<div class="jx-pl${!s.over && playerOf(s.turn) === i ? " on" : ""}" style="--c:${cfg.colors[side]}">
@@ -154,7 +155,7 @@ function makeGame(cfg) {
     };
     const who = playerOf(s.turn);
     const turnTxt = s.over ? "&nbsp;" : isBotTurn() ? "L'robot kayfekker..." :
-      `Dor dyal: <span style="color:${cfg.colors[s.turn]}">${esc(nm(who))}</span>${cfg.hint ? " · " + cfg.hint : ""}`;
+      `Dor dyal: <span style="color:${cfg.colors[s.turn]}">${esc(nm(who))}</span>${(() => { const h = typeof cfg.hint === "function" ? cfg.hint(s) : cfg.hint; return h ? " · " + h : ""; })()}`;
     render(`
       ${s.vsBot && !cfg.fixedLevel ? `<span class="jx-badge ${s.level}">Robot · ${LV[s.level][0]}</span>` : ""}
       <div class="jx-score">${pl(0)}${pl(1)}</div>
@@ -387,6 +388,7 @@ const c4 = makeGame({
 });
 
 /* ---------- CONNECT M3A L'APP ---------- */
+window.frleesMakeGame = makeGame;
 const baseShow = window.show;
 window.show = function (id) {
   baseShow(id);
