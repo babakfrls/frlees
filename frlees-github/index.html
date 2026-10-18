@@ -496,8 +496,17 @@ requestAnimationFrame(frame);
   if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
 </script>
-<script src="imposter.js"></script>
-<script src="jeux.js"></script>
-<script src="jeux2.js"></script>
+<script>
+/* ila chi lo3ba ma t7mmlatch, katban had l'message blast page khawya */
+window.frErr=[];addEventListener('error',e=>{frErr.push((e.filename||'').split('/').pop()+': '+e.message)});
+</script>
+<script src="imposter.js?v=4"></script>
+<script src="jeux.js?v=4"></script>
+<script src="jeux2.js?v=4"></script>
+<script>
+(function(){const base=window.show;window.show=function(id){base(id);
+  setTimeout(()=>{const v=document.getElementById(id);if(!v||id==='home'||id==='game'||v.innerHTML.trim())return;
+    v.innerHTML='<div style="max-width:460px;margin:30px auto;text-align:center;display:flex;flex-direction:column;gap:12px"><div style="font-size:44px">:(</div><b style="font-size:20px">L\'lo3ba ma t7mmlatch</b><div style="color:var(--muted);font-size:14px">Sedd l\'app w 3awd fte7ha. Ila b9at, sift had l\'ktaba l frlees:</div><code style="font-size:12px;color:var(--muted);word-break:break-all">'+(window.frErr.join(' | ')||('ma l9itch: '+id))+'</code></div>'},150)}})();
+</script>
 </body>
 </html>
